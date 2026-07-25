@@ -56,3 +56,13 @@ is completed. See `docs/deployment-guide.md` once available.
 ## License
 
 TBD
+
+## Module Progress
+
+- [x] Module 0: Repository, tooling, monorepo scaffold
+- [x] Module 1: IdentityContract — registration, approval, lifecycle, RBAC (22/22 tests passing)
+- [ ] Module 2: CredentialContract
+- [ ] Module 3: AccessControlContract
+- [ ] Module 4: AuditLogContract
+- [ ] Module 5: Backend API
+- [ ] Module 6: Frontend
