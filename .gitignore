@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment secrets - NEVER commit these
+.env
+.env.local
+.env.*.local
+apps/backend/.env
+apps/frontend/.env
+contracts/.env
+
+# Build outputs
+dist/
+build/
+apps/frontend/dist/
+apps/backend/dist/
+packages/shared/dist/
+
+# Hardhat
+contracts/cache/
+contracts/artifacts/
+contracts/typechain-types/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+
+# Testing
+coverage/
+
+# MongoDB local data (if bind-mounted)
+mongo-data/
