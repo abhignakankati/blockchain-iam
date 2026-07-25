@@ -1,31 +1,33 @@
 import { ethers } from "hardhat";
 
 /**
- * Deploys IdentityContract to whatever network is targeted
- * (e.g. `npx hardhat run scripts/deploy.ts --network localhost`).
- *
- * Prints the deployed address and the deployer's role assignments so you
- * can immediately copy the address into the backend's .env or MetaMask.
+ * Deploys IdentityContract, then CredentialContract wired to it.
+ * Run with: npx hardhat run scripts/deploy.ts --network <network>
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
 
   const balance = await ethers.provider.getBalance(deployer.address);
-  console.log("Account balance:", ethers.formatEther(balance), "ETH");
+  console.log("Account balance:", ethers.formatEther(balance), "ETH\n");
 
+  // 1. Deploy IdentityContract
   const IdentityContractFactory = await ethers.getContractFactory("IdentityContract");
   const identityContract = await IdentityContractFactory.deploy();
   await identityContract.waitForDeployment();
+  const identityAddress = await identityContract.getAddress();
+  console.log("✅ IdentityContract deployed to:", identityAddress);
 
-  const address = await identityContract.getAddress();
-  console.log("\n✅ IdentityContract deployed to:", address);
+  // 2. Deploy CredentialContract, pointing at IdentityContract
+  const CredentialContractFactory = await ethers.getContractFactory("CredentialContract");
+  const credentialContract = await CredentialContractFactory.deploy(identityAddress);
+  await credentialContract.waitForDeployment();
+  const credentialAddress = await credentialContract.getAddress();
+  console.log("✅ CredentialContract deployed to:", credentialAddress);
 
-  const adminRole = await identityContract.ADMIN_ROLE();
-  const isAdmin = await identityContract.hasRole(adminRole, deployer.address);
-  console.log("Deployer has ADMIN_ROLE:", isAdmin);
-
-  console.log("\nCopy this address into apps/backend/.env as IDENTITY_CONTRACT_ADDRESS");
+  console.log("\nCopy these into apps/backend/.env:");
+  console.log(`IDENTITY_CONTRACT_ADDRESS=${identityAddress}`);
+  console.log(`CREDENTIAL_CONTRACT_ADDRESS=${credentialAddress}`);
 }
 
 main().catch((error) => {
