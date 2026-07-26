@@ -1,8 +1,8 @@
 import { ethers } from "hardhat";
 
 /**
- * Deploys IdentityContract, then CredentialContract wired to it.
- * Run with: npx hardhat run scripts/deploy.ts --network <network>
+ * Deploys IdentityContract, then CredentialContract and AccessControlContract,
+ * both wired to it. Run with: npx hardhat run scripts/deploy.ts --network <network>
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -25,9 +25,17 @@ async function main() {
   const credentialAddress = await credentialContract.getAddress();
   console.log("✅ CredentialContract deployed to:", credentialAddress);
 
+  // 3. Deploy AccessControlContract, also pointing at IdentityContract
+  const AccessControlContractFactory = await ethers.getContractFactory("AccessControlContract");
+  const accessControlContract = await AccessControlContractFactory.deploy(identityAddress);
+  await accessControlContract.waitForDeployment();
+  const accessControlAddress = await accessControlContract.getAddress();
+  console.log("✅ AccessControlContract deployed to:", accessControlAddress);
+
   console.log("\nCopy these into apps/backend/.env:");
   console.log(`IDENTITY_CONTRACT_ADDRESS=${identityAddress}`);
   console.log(`CREDENTIAL_CONTRACT_ADDRESS=${credentialAddress}`);
+  console.log(`ACCESS_CONTROL_CONTRACT_ADDRESS=${accessControlAddress}`);
 }
 
 main().catch((error) => {

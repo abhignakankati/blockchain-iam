@@ -62,7 +62,7 @@ TBD
 - [x] Module 0: Repository, tooling, monorepo scaffold
 - [x] Module 1: IdentityContract — registration, approval, lifecycle, RBAC (22/22 tests passing)
 - [x] Module 2: CredentialContract — issuance, revocation, expiry (50/50 tests passing)
-- [ ] Module 3: AccessControlContract
+- [x] Module 3: AccessControlContract — RBAC + ABAC, 3-tier approval (85/85 tests passing)
 - [ ] Module 4: AuditLogContract
 - [ ] Module 5: Backend API
 - [ ] Module 6: Frontend
