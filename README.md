@@ -58,11 +58,16 @@ is completed. See `docs/deployment-guide.md` once available.
 TBD
 
 ## Module Progress
-
 - [x] Module 0: Repository, tooling, monorepo scaffold
 - [x] Module 1: IdentityContract — registration, approval, lifecycle, RBAC (22/22 tests passing)
 - [x] Module 2: CredentialContract — issuance, revocation, expiry (50/50 tests passing)
 - [x] Module 3: AccessControlContract — RBAC + ABAC, 3-tier approval (85/85 tests passing)
-- [ ] Module 4: AuditLogContract
-- [ ] Module 5: Backend API
-- [ ] Module 6: Frontend
+- [x] Module 4: Backend Foundation + Event Indexer — live event indexing verified end-to-end (AuditLogContract merged into this module as an event-based indexer instead of a redundant on-chain contract — see docs/module-04)
+- [ ] Module 5: Auth (wallet-linked JWT)
+- [ ] Module 6: User/Identity API
+- [ ] Module 7: Credential API (issuance, IPFS upload)
+- [ ] Module 8: Access request/approval workflow API
+- [ ] Module 9: Delegated verification API
+- [ ] Module 10: Audit log query API
+- [ ] Module 11: Security hardening pass
+- [ ] Module 12: Frontend
