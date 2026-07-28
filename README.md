@@ -64,7 +64,7 @@ TBD
 - [x] Module 3: AccessControlContract — RBAC + ABAC, 3-tier approval (85/85 tests passing)
 - [x] Module 4: Backend Foundation + Event Indexer — live event indexing verified end-to-end (AuditLogContract merged into this module as an event-based indexer instead of a redundant on-chain contract — see docs/module-04)
 - [x] Module 5: Auth (SIWE + JWT) — full login flow verified end-to-end
-- [ ] Module 6: User/Identity API
+- [x] Module 6: User/Identity API — full registration-to-approval loop verified live
 - [ ] Module 7: Credential API (issuance, IPFS upload)
 - [ ] Module 8: Access request/approval workflow API
 - [ ] Module 9: Delegated verification API

@@ -7,6 +7,7 @@ import { connectDatabase } from "./config/database.js";
 import { startListening } from "./services/blockchainListener.js";
 import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import { requireAuth, requireActiveIdentity } from "./middleware/auth.js";
 
 async function main() {
@@ -26,9 +27,8 @@ async function main() {
   });
 
   app.use("/api/auth", authRoutes);
+  app.use("/api/users", userRoutes);
 
-  // Temporary diagnostic route to confirm the full auth pipeline works
-  // end-to-end. Will be replaced by real protected routes in later modules.
   app.get("/api/me", requireAuth, requireActiveIdentity, (req, res) => {
     res.json({ address: req.user?.address, status: "active" });
   });

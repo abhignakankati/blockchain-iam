@@ -10,6 +10,7 @@ const envSchema = z.object({
   MONGO_URI: z.string().min(1, "MONGO_URI is required"),
 
   RPC_URL: z.string().min(1, "RPC_URL is required"),
+  WS_RPC_URL: z.string().min(1, "WS_RPC_URL is required"),
   IDENTITY_CONTRACT_ADDRESS: z.string().min(1, "IDENTITY_CONTRACT_ADDRESS is required"),
   CREDENTIAL_CONTRACT_ADDRESS: z.string().min(1, "CREDENTIAL_CONTRACT_ADDRESS is required"),
   ACCESS_CONTROL_CONTRACT_ADDRESS: z.string().min(1, "ACCESS_CONTROL_CONTRACT_ADDRESS is required"),
@@ -19,6 +20,8 @@ const envSchema = z.object({
 
   SIWE_DOMAIN: z.string().default("localhost"),
   SIWE_URI: z.string().default("http://localhost:4000"),
+
+  SERVER_SALT: z.string().min(32, "SERVER_SALT must be at least 32 characters"),
 });
 
 const parsed = envSchema.safeParse(process.env);
