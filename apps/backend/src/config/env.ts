@@ -3,12 +3,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-/**
- * Validates all required environment variables at startup. If anything is
- * missing or malformed, the process exits immediately with a clear error
- * instead of failing confusingly later (e.g. a blank contract address
- * silently causing every blockchain call to revert).
- */
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(4000),
@@ -19,6 +13,12 @@ const envSchema = z.object({
   IDENTITY_CONTRACT_ADDRESS: z.string().min(1, "IDENTITY_CONTRACT_ADDRESS is required"),
   CREDENTIAL_CONTRACT_ADDRESS: z.string().min(1, "CREDENTIAL_CONTRACT_ADDRESS is required"),
   ACCESS_CONTROL_CONTRACT_ADDRESS: z.string().min(1, "ACCESS_CONTROL_CONTRACT_ADDRESS is required"),
+
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
+  JWT_EXPIRY: z.string().default("1h"),
+
+  SIWE_DOMAIN: z.string().default("localhost"),
+  SIWE_URI: z.string().default("http://localhost:4000"),
 });
 
 const parsed = envSchema.safeParse(process.env);
