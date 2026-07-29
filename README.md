@@ -66,7 +66,7 @@ TBD
 - [x] Module 5: Auth (SIWE + JWT) — full login flow verified end-to-end
 - [x] Module 6: User/Identity API — full registration-to-approval loop verified live
 - [x] Module 7: Credential API — real IPFS upload + on-chain issuance verified live
-- [ ] Module 8: Access request/approval workflow API
+- [x] Module 8: Access Request/Approval Workflow API — Normal + Sensitive tiers verified live
 - [ ] Module 9: Delegated verification API
 - [ ] Module 10: Audit log query API
 - [ ] Module 11: Security hardening pass
