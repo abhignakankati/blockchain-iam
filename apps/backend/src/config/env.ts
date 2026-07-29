@@ -22,6 +22,8 @@ const envSchema = z.object({
   SIWE_URI: z.string().default("http://localhost:4000"),
 
   SERVER_SALT: z.string().min(32, "SERVER_SALT must be at least 32 characters"),
+
+  PINATA_JWT: z.string().min(100, "PINATA_JWT is required and should be a long JWT"),
 });
 
 const parsed = envSchema.safeParse(process.env);
