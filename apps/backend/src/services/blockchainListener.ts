@@ -7,6 +7,8 @@ import { logger } from "../config/logger.js";
 import { AuditLog } from "../models/AuditLog.js";
 import { UserProfile } from "../models/UserProfile.js";
 import { CredentialRecord } from "../models/CredentialRecord.js";
+import { ResourceRecord, SensitivityLevel } from "../models/ResourceRecord.js";
+import { AccessRequestRecord, AccessRequestStatus } from "../models/AccessRequestRecord.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -89,17 +91,6 @@ async function handleIdentityApproved(details: Record<string, unknown>) {
   }
 }
 
-/**
- * Creates the off-chain CredentialRecord index entry once a credential is
- * actually issued on-chain. The CredentialIssued event only carries
- * credentialId, subject, issuer, documentHash, expiresAt, and timestamp -
- * it does NOT include credentialType or ipfsHash, even though those exist
- * in the contract's stored struct. So this handler makes one additional
- * read call (getCredential) to fetch the complete record before indexing
- * it - a view call, free of gas cost, just an RPC round-trip.
- * Idempotent via the unique credentialId index - a redelivered event is a
- * silent no-op.
- */
 async function handleCredentialIssued(details: Record<string, unknown>) {
   const credentialId = details.credentialId as string;
   const subject = (details.subject as string)?.toLowerCase();
@@ -159,11 +150,122 @@ async function handleCredentialRevoked(details: Record<string, unknown>) {
   }
 }
 
+const SENSITIVITY_LEVELS: SensitivityLevel[] = ["Normal", "Sensitive", "Critical"];
+const REQUEST_STATUSES: AccessRequestStatus[] = ["Pending", "Pending", "Granted", "Denied"]; // index 0 (None) never reaches here
+
+async function handleResourceRegistered(details: Record<string, unknown>) {
+  const resourceId = details.resourceId as string;
+  const owner = (details.owner as string)?.toLowerCase();
+  const sensitivityLevelRaw = Number(details.sensitivityLevel);
+
+  if (!resourceId || !owner) return;
+
+  await ResourceRecord.findOneAndUpdate(
+    { resourceId },
+    {
+      $setOnInsert: {
+        resourceId,
+        owner,
+        sensitivityLevel: SENSITIVITY_LEVELS[sensitivityLevelRaw] ?? "Normal",
+        requiredRole: "",
+        requiredAttributeKey: "",
+        requiredAttributeValue: "",
+        approver1: "",
+        approver2: "",
+        registeredAt: new Date(),
+      },
+    },
+    { upsert: true }
+  );
+
+  logger.info("Resource indexed after on-chain registration", { resourceId, owner });
+}
+
+async function handleApproversUpdated(details: Record<string, unknown>) {
+  const resourceId = details.resourceId as string;
+  const approver1 = (details.approver1 as string)?.toLowerCase() ?? "";
+  const approver2 = (details.approver2 as string)?.toLowerCase() ?? "";
+  if (!resourceId) return;
+
+  await ResourceRecord.findOneAndUpdate({ resourceId }, { $set: { approver1, approver2 } });
+
+  logger.info("Resource approvers updated in index", { resourceId });
+}
+
+async function handleAccessRequested(details: Record<string, unknown>) {
+  const resourceId = details.resourceId as string;
+  const requester = (details.requester as string)?.toLowerCase();
+  const initialStatusRaw = Number(details.initialStatus);
+  if (!resourceId || !requester) return;
+
+  const status = REQUEST_STATUSES[initialStatusRaw] ?? "Pending";
+
+  await AccessRequestRecord.findOneAndUpdate(
+    { resourceId, requester },
+    {
+      $set: {
+        status,
+        requestedAt: new Date(),
+        decidedAt: status === "Pending" ? null : new Date(),
+        currentlyGranted: status === "Granted",
+      },
+    },
+    { upsert: true }
+  );
+
+  logger.info("Access request indexed", { resourceId, requester, status });
+}
+
+async function handleAccessGranted(details: Record<string, unknown>) {
+  const resourceId = details.resourceId as string;
+  const requester = (details.requester as string)?.toLowerCase();
+  if (!resourceId || !requester) return;
+
+  await AccessRequestRecord.findOneAndUpdate(
+    { resourceId, requester },
+    { $set: { status: "Granted", decidedAt: new Date(), currentlyGranted: true } }
+  );
+
+  logger.info("Access request marked Granted", { resourceId, requester });
+}
+
+async function handleAccessDenied(details: Record<string, unknown>) {
+  const resourceId = details.resourceId as string;
+  const requester = (details.requester as string)?.toLowerCase();
+  if (!resourceId || !requester) return;
+
+  await AccessRequestRecord.findOneAndUpdate(
+    { resourceId, requester },
+    { $set: { status: "Denied", decidedAt: new Date(), currentlyGranted: false } }
+  );
+
+  logger.info("Access request marked Denied", { resourceId, requester });
+}
+
+async function handleAccessRevoked(details: Record<string, unknown>) {
+  const resourceId = details.resourceId as string;
+  const wallet = (details.wallet as string)?.toLowerCase();
+  if (!resourceId || !wallet) return;
+
+  await AccessRequestRecord.findOneAndUpdate(
+    { resourceId, requester: wallet },
+    { $set: { currentlyGranted: false } }
+  );
+
+  logger.info("Access marked revoked in index", { resourceId, wallet });
+}
+
 const eventHandlers: Record<string, EventHandler> = {
   "IdentityContract.IdentityRegistered": handleIdentityRegistered,
   "IdentityContract.IdentityApproved": handleIdentityApproved,
   "CredentialContract.CredentialIssued": handleCredentialIssued,
   "CredentialContract.CredentialRevoked": handleCredentialRevoked,
+  "AccessControlContract.ResourceRegistered": handleResourceRegistered,
+  "AccessControlContract.ApproversUpdated": handleApproversUpdated,
+  "AccessControlContract.AccessRequested": handleAccessRequested,
+  "AccessControlContract.AccessGranted": handleAccessGranted,
+  "AccessControlContract.AccessDenied": handleAccessDenied,
+  "AccessControlContract.AccessRevoked": handleAccessRevoked,
 };
 
 async function recordEvent(

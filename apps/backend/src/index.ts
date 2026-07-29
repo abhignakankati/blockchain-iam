@@ -9,6 +9,7 @@ import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import credentialRoutes from "./routes/credentialRoutes.js";
+import accessRoutes from "./routes/accessRoutes.js";
 import { requireAuth, requireActiveIdentity } from "./middleware/auth.js";
 
 async function main() {
@@ -30,6 +31,7 @@ async function main() {
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/credentials", credentialRoutes);
+  app.use("/api/access", accessRoutes);
 
   app.get("/api/me", requireAuth, requireActiveIdentity, (req, res) => {
     res.json({ address: req.user?.address, status: "active" });
