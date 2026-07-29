@@ -6,6 +6,7 @@ import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { AuditLog } from "../models/AuditLog.js";
 import { UserProfile } from "../models/UserProfile.js";
+import { CredentialRecord } from "../models/CredentialRecord.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -88,9 +89,81 @@ async function handleIdentityApproved(details: Record<string, unknown>) {
   }
 }
 
+/**
+ * Creates the off-chain CredentialRecord index entry once a credential is
+ * actually issued on-chain. The CredentialIssued event only carries
+ * credentialId, subject, issuer, documentHash, expiresAt, and timestamp -
+ * it does NOT include credentialType or ipfsHash, even though those exist
+ * in the contract's stored struct. So this handler makes one additional
+ * read call (getCredential) to fetch the complete record before indexing
+ * it - a view call, free of gas cost, just an RPC round-trip.
+ * Idempotent via the unique credentialId index - a redelivered event is a
+ * silent no-op.
+ */
+async function handleCredentialIssued(details: Record<string, unknown>) {
+  const credentialId = details.credentialId as string;
+  const subject = (details.subject as string)?.toLowerCase();
+  const issuer = (details.issuer as string)?.toLowerCase();
+  const documentHash = details.documentHash as string;
+  const expiresAtRaw = details.expiresAt as string;
+
+  if (!credentialId || !subject || !issuer) return;
+
+  const expiresAt = expiresAtRaw && expiresAtRaw !== "0" ? new Date(Number(expiresAtRaw) * 1000) : null;
+
+  let credentialType = "unknown";
+  let ipfsHash = "";
+
+  try {
+    const abi = loadAbi("CredentialContract.json");
+    const contract = new ethers.Contract(env.CREDENTIAL_CONTRACT_ADDRESS, abi, httpProvider);
+    const fullRecord = await contract.getCredential(credentialId);
+    credentialType = fullRecord.credentialType;
+    ipfsHash = fullRecord.ipfsHash;
+  } catch (error) {
+    logger.error("Failed to fetch full credential record for indexing", { credentialId, error });
+  }
+
+  await CredentialRecord.findOneAndUpdate(
+    { credentialId },
+    {
+      $setOnInsert: {
+        credentialId,
+        subject,
+        issuer,
+        documentHash,
+        credentialType,
+        ipfsHash,
+        issuedAt: new Date(),
+        expiresAt,
+        status: "Active",
+      },
+    },
+    { upsert: true }
+  );
+
+  logger.info("Credential record indexed after on-chain issuance", { credentialId, subject, issuer, credentialType });
+}
+
+async function handleCredentialRevoked(details: Record<string, unknown>) {
+  const credentialId = details.credentialId as string;
+  if (!credentialId) return;
+
+  const result = await CredentialRecord.findOneAndUpdate(
+    { credentialId, status: "Active" },
+    { $set: { status: "Revoked" } }
+  );
+
+  if (result) {
+    logger.info("Credential record marked revoked", { credentialId });
+  }
+}
+
 const eventHandlers: Record<string, EventHandler> = {
   "IdentityContract.IdentityRegistered": handleIdentityRegistered,
   "IdentityContract.IdentityApproved": handleIdentityApproved,
+  "CredentialContract.CredentialIssued": handleCredentialIssued,
+  "CredentialContract.CredentialRevoked": handleCredentialRevoked,
 };
 
 async function recordEvent(
@@ -131,14 +204,6 @@ async function recordEvent(
   }
 }
 
-/**
- * Live listening uses a WebSocket provider (eth_subscribe) rather than the
- * default HTTP polling provider (eth_newFilter/eth_getFilterChanges).
- * Hardhat's node can expire idle HTTP filters, which surfaces as a
- * "results is not iterable" crash from Ethers' filter-polling internals and
- * silently kills the subscription. WebSocket push-based subscriptions don't
- * have this failure mode.
- */
 export function startListening(): void {
   for (const { name, address, abiPath } of trackedContracts) {
     const abi = loadAbi(abiPath);

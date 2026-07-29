@@ -65,7 +65,7 @@ TBD
 - [x] Module 4: Backend Foundation + Event Indexer — live event indexing verified end-to-end (AuditLogContract merged into this module as an event-based indexer instead of a redundant on-chain contract — see docs/module-04)
 - [x] Module 5: Auth (SIWE + JWT) — full login flow verified end-to-end
 - [x] Module 6: User/Identity API — full registration-to-approval loop verified live
-- [ ] Module 7: Credential API (issuance, IPFS upload)
+- [x] Module 7: Credential API — real IPFS upload + on-chain issuance verified live
 - [ ] Module 8: Access request/approval workflow API
 - [ ] Module 9: Delegated verification API
 - [ ] Module 10: Audit log query API
