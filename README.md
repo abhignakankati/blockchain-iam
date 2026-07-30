@@ -67,7 +67,7 @@ TBD
 - [x] Module 6: User/Identity API — full registration-to-approval loop verified live
 - [x] Module 7: Credential API — real IPFS upload + on-chain issuance verified live
 - [x] Module 8: Access Request/Approval Workflow API — Normal + Sensitive tiers verified live
-- [ ] Module 9: Delegated verification API
+- [x] Module 9: Delegated Verification API — full lifecycle verified live, no auth required for external verifiers
 - [ ] Module 10: Audit log query API
 - [ ] Module 11: Security hardening pass
 - [ ] Module 12: Frontend

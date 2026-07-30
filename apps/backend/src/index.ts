@@ -10,6 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import credentialRoutes from "./routes/credentialRoutes.js";
 import accessRoutes from "./routes/accessRoutes.js";
+import delegationRoutes from "./routes/delegationRoutes.js";
 import { requireAuth, requireActiveIdentity } from "./middleware/auth.js";
 
 async function main() {
@@ -32,6 +33,7 @@ async function main() {
   app.use("/api/users", userRoutes);
   app.use("/api/credentials", credentialRoutes);
   app.use("/api/access", accessRoutes);
+  app.use("/api/delegation", delegationRoutes);
 
   app.get("/api/me", requireAuth, requireActiveIdentity, (req, res) => {
     res.json({ address: req.user?.address, status: "active" });
