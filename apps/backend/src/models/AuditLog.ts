@@ -18,7 +18,7 @@ const auditLogSchema = new Schema<IAuditLog>({
   transactionHash: { type: String, required: true },
   logIndex: { type: Number, required: true },
   blockNumber: { type: Number, required: true },
-  actor: { type: String, index: true },
+  actor: { type: String, lowercase: true, index: true },
   resourceId: { type: String, index: true },
   details: { type: Schema.Types.Mixed, default: {} },
   timestamp: { type: Date, required: true },
