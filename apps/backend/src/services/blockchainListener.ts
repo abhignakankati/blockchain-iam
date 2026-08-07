@@ -13,7 +13,6 @@ import { AccessRequestRecord, AccessRequestStatus } from "../models/AccessReques
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const httpProvider = new ethers.JsonRpcProvider(env.RPC_URL);
-const wsProvider = new ethers.WebSocketProvider(env.WS_RPC_URL);
 
 interface TrackedContract {
   name: string;
@@ -151,7 +150,7 @@ async function handleCredentialRevoked(details: Record<string, unknown>) {
 }
 
 const SENSITIVITY_LEVELS: SensitivityLevel[] = ["Normal", "Sensitive", "Critical"];
-const REQUEST_STATUSES: AccessRequestStatus[] = ["Pending", "Pending", "Granted", "Denied"]; // index 0 (None) never reaches here
+const REQUEST_STATUSES: AccessRequestStatus[] = ["Pending", "Pending", "Granted", "Denied"];
 
 async function handleResourceRegistered(details: Record<string, unknown>) {
   const resourceId = details.resourceId as string;
@@ -295,8 +294,6 @@ async function recordEvent(
       { upsert: true, returnDocument: "after" }
     );
 
-    logger.info(`Indexed event: ${contractName}.${parsed.name}`, { transactionHash: log.transactionHash });
-
     const handler = eventHandlers[`${contractName}.${parsed.name}`];
     if (handler) {
       await handler(details);
@@ -306,10 +303,50 @@ async function recordEvent(
   }
 }
 
-export function startListening(): void {
+export async function runBackfill(): Promise<void> {
   for (const { name, address, abiPath } of trackedContracts) {
     const abi = loadAbi(abiPath);
-    const contract = new ethers.Contract(address, abi, wsProvider);
+    const contract = new ethers.Contract(address, abi, httpProvider);
+
+    const eventFragments = contract.interface.fragments.filter(
+      (fragment): fragment is ethers.EventFragment => fragment.type === "event"
+    );
+
+    for (const fragment of eventFragments) {
+      const logs = await contract.queryFilter(fragment.name, 0, "latest");
+
+      for (const log of logs) {
+        if (!("args" in log)) continue;
+        await recordEvent(name, { name: fragment.name, args: log.args, fragment }, log as ethers.EventLog);
+      }
+    }
+  }
+}
+
+/**
+ * Connection strategy (revised): a single WebSocket connection for live
+ * delivery, with NO custom manual reconnect logic. An earlier version
+ * attempted reconnect-with-backoff on socket close/error, but this fought
+ * with Ethers' own internal JsonRpcApiProvider retry behavior (visible as
+ * "JsonRpcProvider failed to detect network..." log lines that come from
+ * Ethers itself, not our code) - the two independent retry mechanisms
+ * triggered each other's event handlers, producing a connection storm
+ * that reached dozens of concurrent sockets within seconds during testing.
+ *
+ * Rather than add further locking to fully tame an interaction with
+ * library internals we don't control, the simpler and more robust design
+ * is: let the WebSocket connection be best-effort for low-latency live
+ * updates, and rely on a frequent periodic backfill (every 60 seconds) as
+ * the actual correctness guarantee. Worst case, an event is caught up to
+ * 60 seconds late instead of instantly - but this can never cascade or
+ * storm, and is trivially simple to reason about. A simpler, slightly
+ * slower design beat a cleverer, fragile one here.
+ */
+function connectWebSocket(): void {
+  const provider = new ethers.WebSocketProvider(env.WS_RPC_URL);
+  for (const { name, address, abiPath } of trackedContracts) {
+    const abi = loadAbi(abiPath);
+    const contract = new ethers.Contract(address, abi, provider);
 
     contract.on("*", async (payload: ethers.ContractEventPayload) => {
       const parsedLog = contract.interface.parseLog(payload.log);
@@ -317,9 +354,23 @@ export function startListening(): void {
 
       await recordEvent(name, parsedLog, payload.log);
     });
-
-    logger.info(`Listening for events on ${name} at ${address} (WebSocket)`);
   }
+
+  logger.info("WebSocket connection established for live event delivery (best-effort, no manual reconnect)");
+}
+
+function startPeriodicBackfill(intervalMs: number): void {
+  setInterval(() => {
+    runBackfill().catch((error) => {
+      logger.error("Periodic safety-net backfill failed", { error });
+    });
+  }, intervalMs);
+}
+
+export function startListening(): void {
+  connectWebSocket();
+  startPeriodicBackfill(60 * 1000); // every 60 seconds - the actual correctness guarantee
+  logger.info("Blockchain listener started (WebSocket best-effort + 60s periodic backfill as source of truth)");
 }
 
 export { httpProvider as provider, trackedContracts, loadAbi, recordEvent };
