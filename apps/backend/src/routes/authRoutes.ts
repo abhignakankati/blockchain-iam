@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { ethers } from "ethers";
 import { issueNonce, verifySiweSignature } from "../services/authService.js";
+import { nonceLimiter } from "../middleware/rateLimiters.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -15,7 +16,7 @@ const nonceRequestSchema = z.object({
  * Issues a one-time nonce for the given wallet address to begin SIWE login.
  * The client embeds this nonce into the SIWE message it asks the user to sign.
  */
-router.get("/nonce", async (req: Request, res: Response) => {
+router.get("/nonce", nonceLimiter, async (req: Request, res: Response) => {
   const parsed = nonceRequestSchema.safeParse({ address: req.query.address });
 
   if (!parsed.success) {

@@ -69,5 +69,5 @@ TBD
 - [x] Module 8: Access Request/Approval Workflow API — Normal + Sensitive tiers verified live
 - [x] Module 9: Delegated Verification API — full lifecycle verified live, no auth required for external verifiers
 - [x] Module 10: Audit Log Query API — fixed a real case-sensitivity bug, verified live
-- [ ] Module 11: Security hardening pass
+- [x] Module 11: Security Hardening — resilience fix (avoided reconnect storm), rate limiting, validation fixes, dependency audit (0 vulns in production deps)
 - [ ] Module 12: Frontend

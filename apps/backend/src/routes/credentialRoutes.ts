@@ -9,7 +9,18 @@ const router = Router();
 
 // In-memory storage - files are small documents (certificates, transcripts),
 // never written to local disk, immediately forwarded to Pinata and discarded.
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB cap
+const ALLOWED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB cap
+  fileFilter: (_req, file, callback) => {
+    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      return callback(new Error("Unsupported file type. Allowed: PDF, PNG, JPEG, WEBP"));
+    }
+    callback(null, true);
+  },
+});
 
 /**
  * POST /api/credentials/upload
@@ -41,8 +52,6 @@ router.post(
 /**
  * GET /api/credentials/mine
  * Returns credentials where the authenticated wallet is the subject.
- * Backed by the off-chain index (CredentialRecord), populated reactively
- * by the blockchain listener - not a live chain read on every request.
  */
 router.get("/mine", requireAuth, async (req: Request, res: Response) => {
   const credentials = await CredentialRecord.find({ subject: req.user?.address });
@@ -67,8 +76,7 @@ const revokeIntentSchema = z.object({
  * Validates that the caller is either the original issuer or holds
  * ADMIN_ROLE, BEFORE they attempt the actual on-chain revokeCredential
  * call. This is a UX convenience check only - CredentialContract itself
- * still enforces the real authorization on-chain regardless of what this
- * route says.
+ * still enforces the real authorization on-chain regardless.
  */
 router.post("/revoke-intent", requireAuth, requireActiveIdentity, async (req: Request, res: Response) => {
   const parsed = revokeIntentSchema.safeParse(req.body);

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { createDelegationGrant, verifyWithDelegationToken, revokeDelegationGrant } from "../services/delegationService.js";
+import { verifyLimiter } from "../middleware/rateLimiters.js";
 import { requireAuth, requireActiveIdentity } from "../middleware/auth.js";
 
 const router = Router();
@@ -41,7 +42,7 @@ router.post("/grant", requireAuth, requireActiveIdentity, async (req: Request, r
  * auditors) who may have no identity in the system at all, matching the
  * synopsis's "External Verifier" actor.
  */
-router.get("/verify/:token", async (req: Request, res: Response) => {
+router.get("/verify/:token", verifyLimiter, async (req: Request, res: Response) => {
   const token = typeof req.params.token === "string" ? req.params.token : req.params.token[0];
   if (!token) {
     return res.status(400).json({ error: "Token is required" });

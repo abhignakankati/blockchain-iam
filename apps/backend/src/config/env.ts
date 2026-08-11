@@ -24,6 +24,8 @@ const envSchema = z.object({
   SERVER_SALT: z.string().min(32, "SERVER_SALT must be at least 32 characters"),
 
   PINATA_JWT: z.string().min(100, "PINATA_JWT is required and should be a long JWT"),
+
+  ALLOWED_ORIGINS: z.string().default("http://localhost:5173"),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -34,4 +36,7 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+export const env = {
+  ...parsed.data,
+  allowedOrigins: parsed.data.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()),
+};

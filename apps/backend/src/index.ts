@@ -13,6 +13,7 @@ import accessRoutes from "./routes/accessRoutes.js";
 import delegationRoutes from "./routes/delegationRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
 import { requireAuth, requireActiveIdentity } from "./middleware/auth.js";
+import { generalLimiter } from "./middleware/rateLimiters.js";
 
 async function main() {
   await connectDatabase();
@@ -22,9 +23,15 @@ async function main() {
   const app = express();
 
   app.use(helmet());
-  app.use(cors());
+  app.use(
+    cors({
+      origin: env.allowedOrigins,
+      credentials: true,
+    })
+  );
   app.use(express.json());
   app.use(passport.initialize());
+  app.use("/api", generalLimiter);
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
