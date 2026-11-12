@@ -94,12 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nonce: nonceData.nonce,
       });
       const messageToSign = siweMessage.prepareMessage();
-      console.log("[auth] message prepared", messageToSign);
 
       const signature = await signer.signMessage(messageToSign);
-      console.log("[auth] signature obtained", signature);
 
-      console.log("[auth] calling verify endpoint");
       const { data: verifyData } = await api.post("/api/auth/verify", {
         message: messageToSign,
         signature,
@@ -112,7 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const message = err instanceof Error ? err.message : "Failed to sign in";
       setError(message);
     } finally {
-      console.log("[auth] connectAndSignIn finished, resetting isConnecting");
       setIsConnecting(false);
     }
   }, []);
