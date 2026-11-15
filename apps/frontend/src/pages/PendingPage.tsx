@@ -16,7 +16,7 @@ export function PendingPage() {
 
   // Once the admin approves (status leaves Pending), hand control back to the router.
   useEffect(() => {
-    if (identity && identity.status !== "Pending") navigate("/");
+    if (identity && identity.status !== "Pending" && identity.status !== "None") navigate("/");
   }, [identity, navigate]);
 
   return (

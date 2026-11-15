@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { getIdentityContract, errMsg } from "@/hooks/useIdentity";
+import { getIdentityContract, errMsg, useIdentity } from "@/hooks/useIdentity";
 
 const schema = z.object({
   name: z.string().min(2, "Enter your full name"),
@@ -21,6 +21,11 @@ const field = "mt-1 w-full rounded-lg border border-border bg-background px-3 py
 export function RegisterPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { data: identity } = useIdentity();
+  // Self-heal: once the chain says we are registered, let the router pick the page.
+  useEffect(() => {
+    if (identity && identity.status !== "None") navigate("/", { replace: true });
+  }, [identity, navigate]);
   const [step, setStep] = useState(-1); // -1 idle, 0..2 = STEPS index in progress
   const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
