@@ -6,6 +6,9 @@ import { RegisterPage } from "@/pages/RegisterPage";
 import { PendingPage } from "@/pages/PendingPage";
 import { AdminPage } from "@/pages/AdminPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { IssuerPage } from "@/pages/IssuerPage";
+import { CredentialsPage } from "@/pages/CredentialsPage";
+import { VerifyPage } from "@/pages/VerifyPage";
 import { useAuth } from "@/context/AuthContext";
 import { useIdentity, errMsg } from "@/hooks/useIdentity";
 
@@ -51,6 +54,9 @@ function App() {
           <Route path="/pending" element={<RequireAuth><PendingPage /></RequireAuth>} />
           <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
           <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+          <Route path="/issuer" element={<RequireAuth><IssuerPage /></RequireAuth>} />
+          <Route path="/credentials" element={<RequireAuth><CredentialsPage /></RequireAuth>} />
+          <Route path="/verify/:token" element={<VerifyPage />} />
         </Routes>
       </main>
     </div>

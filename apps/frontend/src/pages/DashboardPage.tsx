@@ -1,16 +1,21 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useIdentity } from "@/hooks/useIdentity";
 
 const BLURB = {
   admin: "Approve registrations and oversee the system.",
-  issuer: "Issue and revoke credentials. (Issuer tools coming next.)",
-  verifier: "Verify credentials. (Verifier tools coming next.)",
-  user: "View your credentials and request access. (Coming next.)",
+  issuer: "Issue and revoke credentials, and manage your own.",
+  verifier: "Verify credentials using shared links.",
+  user: "View your credentials and share them for verification.",
 } as const;
 
 export function DashboardPage() {
   const { address } = useAuth();
   const { data } = useIdentity();
+  const tiles = [
+    ...(data?.role === "issuer" ? [{ to: "/issuer", title: "Issue credentials", text: "Upload a document and issue it on-chain." }] : []),
+    { to: "/credentials", title: "My credentials", text: "View yours and create shareable verification links." },
+  ];
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
@@ -23,6 +28,14 @@ export function DashboardPage() {
             <span className="ml-3 text-muted-foreground">{BLURB[data.role]}</span>
           </p>
         )}
+      </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {tiles.map((t) => (
+          <Link key={t.to} to={t.to} className="rounded-lg border border-border bg-card p-5 transition hover:border-primary">
+            <p className="font-medium">{t.title} →</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t.text}</p>
+          </Link>
+        ))}
       </div>
     </div>
   );
