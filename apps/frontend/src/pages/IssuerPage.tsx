@@ -18,6 +18,7 @@ export function IssuerPage() {
   const [step, setStep] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [revoked, setRevoked] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0); // remounts the file input after a successful issue
 
   const issued = useQuery<Cred[]>({
     queryKey: ["issued"],
@@ -41,7 +42,7 @@ export function IssuerPage() {
       await tx.wait();
     },
     onSuccess: () => {
-      setSubject(""); setType(""); setExpires(""); setFile(null);
+      setSubject(""); setType(""); setExpires(""); setFile(null); setFormKey((k) => k + 1);
       qc.invalidateQueries({ queryKey: ["issued"] });
     },
     onSettled: () => setStep(null),
@@ -85,7 +86,7 @@ export function IssuerPage() {
             <input type="date" className={input} value={expires} onChange={(e) => setExpires(e.target.value)} disabled={!!step} />
           </label>
           <label className="block text-sm font-medium">Document (PDF, PNG, JPEG, WebP)
-            <input type="file" accept=".pdf,image/png,image/jpeg,image/webp" className={input} onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={!!step} />
+            <input key={formKey} type="file" accept=".pdf,image/png,image/jpeg,image/webp" className={input} onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={!!step} />
           </label>
         </div>
         {step && <p className="text-sm font-medium text-primary">{step}</p>}
