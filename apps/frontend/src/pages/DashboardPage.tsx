@@ -15,6 +15,7 @@ export function DashboardPage() {
   const tiles = [
     ...(data?.role === "issuer" ? [{ to: "/issuer", title: "Issue credentials", text: "Upload a document and issue it on-chain." }] : []),
     { to: "/credentials", title: "My credentials", text: "View yours and create shareable verification links." },
+    { to: "/access", title: "Resource access", text: "Request access and handle approvals." },
   ];
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">

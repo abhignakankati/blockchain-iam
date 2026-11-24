@@ -9,6 +9,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { IssuerPage } from "@/pages/IssuerPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { VerifyPage } from "@/pages/VerifyPage";
+import { AccessPage } from "@/pages/AccessPage";
 import { useAuth } from "@/context/AuthContext";
 import { useIdentity, errMsg } from "@/hooks/useIdentity";
 
@@ -56,6 +57,7 @@ function App() {
           <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
           <Route path="/issuer" element={<RequireAuth><IssuerPage /></RequireAuth>} />
           <Route path="/credentials" element={<RequireAuth><CredentialsPage /></RequireAuth>} />
+          <Route path="/access" element={<RequireAuth><AccessPage /></RequireAuth>} />
           <Route path="/verify/:token" element={<VerifyPage />} />
         </Routes>
       </main>
